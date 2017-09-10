@@ -17,10 +17,11 @@
 #ifndef JM_MEMORY_SIGNATURE_HPP
 #define JM_MEMORY_SIGNATURE_HPP
 
-#include <memory>      // unique_ptr TODO replace this with manual memory management
-#include <algorithm>   // search
-#include <bitset>      // bitset
 #include <type_traits> // is_integral
+#include <algorithm>   // search
+#include <memory>      // unique_ptr TODO replace this with manual memory management
+#include <bitset>      // bitset
+
 
 namespace jm {
 
@@ -44,11 +45,16 @@ namespace jm {
         template<class ForwardIt1, class ForwardIt2>
         inline auto find_wildcard_masked(ForwardIt1 first, ForwardIt1 last, ForwardIt2 mask_first, unsigned char unk)
         {
-            return find_wildcard(first, last, [=](unsigned char) mutable {
+            return find_wildcard(first, last, [=](auto) mutable {
                 return *mask_first++ != unk;
             });
         }
 
+        template<class ForwardIt>
+        inline auto find_wildcard_hybrid(ForwardIt first, ForwardIt last)
+        {
+            return find_wildcard(first, last, [](auto b) { return !(b != ' ' && b != '?'); });
+        }
 
     }
 
@@ -69,6 +75,39 @@ namespace jm {
                 else
                     *my_pat = _wildcard;
             }
+        }
+
+        template<class ForwardIt>
+        void hybrid_to_wildcard(ForwardIt first, ForwardIt last)
+        {
+            /// TODO make this nicer and add error checking
+            char tokens[2];
+            char *end              = tokens;
+            auto my_pat            = _pattern.get();
+            bool prev_was_wildcard = false;
+
+            for (; first != last; ++first) {
+                if (*first == ' ') {
+                    if (tokens == end)
+                        continue;
+
+                    *my_pat++ = std::strtoul(tokens, &end, 16);
+                    end               = tokens;
+                    prev_was_wildcard = false;
+                }
+                else if (*first == '?') {
+                    if (!prev_was_wildcard) {
+                        *my_pat++ = _wildcard;
+                        prev_was_wildcard = true;
+                    }
+                }
+                else
+                    *end++ = *first;
+            }
+            if (tokens != end)
+                *my_pat++          = std::strtoul(tokens, &end, 16);
+
+            _end = my_pat;
         }
 
     public:
@@ -157,6 +196,15 @@ namespace jm {
                 throw std::invalid_argument("pattern size did not match mask size");
 
             masked_to_wildcard(pattern.begin(), pattern.end(), mask.begin(), unknown_byte_identifier);
+        }
+
+        /// hybrid / ida style signature constructors ------------------------------------------------------------------
+        explicit memory_signature(const std::string &pattern)
+                : _pattern(std::make_unique<unsigned char[]>(pattern.size()))
+                , _end(_pattern.get() + pattern.size())
+                , _wildcard(detail::find_wildcard_hybrid(pattern.begin(), pattern.end()))
+        {
+            hybrid_to_wildcard(pattern.begin(), pattern.end());
         }
 
         /// \brief Searches for first occurrence of stored signature in the range [first, last - signature_length).
