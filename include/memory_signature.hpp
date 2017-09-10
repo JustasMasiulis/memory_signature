@@ -48,12 +48,25 @@ namespace jm {
             _end     = _pattern.get() + other.size();
         }
 
-        memory_signature& operator= (const memory_signature &other)
+        memory_signature &operator=(const memory_signature &other)
         {
             auto new_pat = std::make_unique<unsigned char[]>(other.size());
             std::copy(other._pattern.get(), other._end, new_pat.get());
             _pattern  = std::move(new_pat);
             _end      = _pattern.get() + other.size();
+            _wildcard = other._wildcard;
+            return *this;
+        }
+
+        memory_signature(const memory_signature &&other) noexcept
+                : _pattern(std::move(other._pattern))
+                , _end(other._end)
+                , _wildcard(other._wildcard) {}
+
+        memory_signature &operator=(memory_signature &&other) noexcept
+        {
+            _pattern  = std::move(other._pattern);
+            _end      = other._end;
             _wildcard = other._wildcard;
             return *this;
         }
@@ -80,20 +93,17 @@ namespace jm {
         /// \return Returns iterator to the beginning of signature.
         ///         If no such signature is found or if signature is empty returns last.
         template<class ForwardIt>
-        ForwardIt find(ForwardIt first, ForwardIt last) const;
+        ForwardIt find(ForwardIt first, ForwardIt last) const
+        {
+            if (_pattern.get() == _end)
+                return last;
+
+            return std::search(first, last, _pattern.get(), _end, [wildcard = _wildcard](unsigned char lhs
+                                                                                         , unsigned char rhs) {
+                return lhs == rhs || rhs == wildcard;
+            });
+        }
     };
-
-    template<class ForwardIt>
-    ForwardIt memory_signature::find(ForwardIt first, ForwardIt last) const
-    {
-        if (_pattern.get() == _end)
-            return last;
-
-        return std::search(first, last, _pattern.get(), _end, [wildcard = _wildcard](unsigned char lhs
-                                                                                     , unsigned char rhs) {
-            return lhs == rhs || rhs == wildcard;
-        });
-    }
 
 }
 
