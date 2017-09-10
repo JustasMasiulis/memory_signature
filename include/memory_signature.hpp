@@ -33,7 +33,7 @@ namespace jm {
             std::bitset<256> bits;
 
             for (; first != last; ++first)
-                bits[*first] = cmp(*first);
+                bits[static_cast<unsigned char>(*first)] = cmp(*first);
 
             for (auto i = 0; i < 256; ++i)
                 if (!bits[i])
@@ -88,12 +88,12 @@ namespace jm {
 
             for (; first != last; ++first) {
                 if (*first == ' ') {
+                    prev_was_wildcard = false;
                     if (tokens == end)
                         continue;
 
                     *my_pat++ = std::strtoul(tokens, &end, 16);
                     end               = tokens;
-                    prev_was_wildcard = false;
                 }
                 else if (*first == '?') {
                     if (!prev_was_wildcard) {
@@ -101,7 +101,7 @@ namespace jm {
                         prev_was_wildcard = true;
                     }
                 }
-                else
+                else if (*first != '0')
                     *end++ = *first;
             }
             if (tokens != end)
@@ -199,7 +199,7 @@ namespace jm {
         }
 
         /// hybrid / ida style signature constructors ------------------------------------------------------------------
-        explicit memory_signature(const std::string &pattern)
+        memory_signature(const std::string &pattern)
                 : _pattern(std::make_unique<unsigned char[]>(pattern.size()))
                 , _end(_pattern.get() + pattern.size())
                 , _wildcard(detail::find_wildcard_hybrid(pattern.begin(), pattern.end()))
