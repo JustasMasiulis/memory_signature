@@ -17,16 +17,17 @@
 #ifndef JM_MEMORY_SIGNATURE_HPP
 #define JM_MEMORY_SIGNATURE_HPP
 
-#include <memory>    // unique_ptr
-#include <algorithm> // search
-#include <bitset>    // bitset
+#include <memory>      // unique_ptr TODO replace this with manual memory management
+#include <algorithm>   // search
+#include <bitset>      // bitset
+#include <type_traits> // is_integral
 
 namespace jm {
 
     namespace detail {
 
-        template<typename InIt, typename Cmp>
-        inline unsigned char find_wildcard(InIt first, InIt last, Cmp cmp)
+        template<class ForwardIt, class Cmp>
+        inline unsigned char find_wildcard(ForwardIt first, ForwardIt last, Cmp cmp)
         {
             std::bitset<256> bits;
 
@@ -40,11 +41,11 @@ namespace jm {
             throw std::range_error("unable to find unused byte in the provided pattern");
         }
 
-        template<typename InIt, typename Cmp>
-        unsigned char find_wildcard_masked(InIt first, InIt last, InIt mask_first, unsigned char unknown)
+        template<class ForwardIt1, class ForwardIt2>
+        inline auto find_wildcard_masked(ForwardIt1 first, ForwardIt1 last, ForwardIt2 mask_first, unsigned char unk)
         {
-            return find_wildcard(first, last, [=]() mutable {
-                return *mask_first++ != unknown;
+            return find_wildcard(first, last, [=](unsigned char) mutable {
+                return *mask_first++ != unk;
             });
         }
 
@@ -59,13 +60,12 @@ namespace jm {
         std::size_t size() const noexcept { return _end - _pattern.get(); }
 
         template<class ForwardItPat, class ForwardItSig>
-        void
-        masked_to_wilcard(ForwardItPat first_pat, ForwardItPat last_pat, ForwardItSig first_mask, unsigned char unknown)
+        void masked_to_wildcard(ForwardItPat first, ForwardItPat last, ForwardItSig first_mask, unsigned char unknown)
         {
             auto my_pat = _pattern.get();
-            for (; first_pat != last_pat; ++first_pat, ++first_mask, ++my_pat) {
+            for (; first != last; ++first, ++first_mask, ++my_pat) {
                 if (*first_mask != unknown)
-                    *my_pat = *first_pat;
+                    *my_pat = *first;
                 else
                     *my_pat = _wildcard;
             }
@@ -82,19 +82,17 @@ namespace jm {
         ~memory_signature() noexcept = default;
 
         memory_signature(const memory_signature &other)
-                : _wildcard(other._wildcard)
+                : _pattern(std::make_unique<unsigned char[]>(other.size()))
+                , _end(_pattern.get() + other.size())
+                , _wildcard(other._wildcard)
         {
-            auto new_pat = std::unique_ptr<unsigned char[]>(new unsigned char[other.size()]);
-            std::copy(other._pattern.get(), other._end, new_pat.get());
-            _pattern = std::move(new_pat);
-            _end     = _pattern.get() + other.size();
+            std::copy(other._pattern.get(), other._end, _pattern.get());
         }
 
         memory_signature &operator=(const memory_signature &other)
         {
-            auto new_pat = std::unique_ptr<unsigned char[]>(new unsigned char[other.size()]);
-            std::copy(other._pattern.get(), other._end, new_pat.get());
-            _pattern  = std::move(new_pat);
+            _pattern = std::make_unique<unsigned char[]>(other.size());
+            std::copy(other._pattern.get(), other._end, _pattern.get());
             _end      = _pattern.get() + other.size();
             _wildcard = other._wildcard;
             return *this;
@@ -115,9 +113,9 @@ namespace jm {
 
 
         /// wildcard signature constructors ----------------------------------------------------------------------------
-        template<class Wildcard>
+        template<class Wildcard, class = typename std::enable_if<std::is_integral<Wildcard>::value, void>::type>
         memory_signature(const std::string &pattern, Wildcard wildcard)
-                : _pattern(std::unique_ptr<unsigned char[]>(new unsigned char[pattern.size()]))
+                : _pattern(std::make_unique<unsigned char[]>(pattern.size()))
                 , _end(_pattern.get() + pattern.size())
                 , _wildcard(static_cast<unsigned char>(wildcard))
         {
@@ -126,7 +124,7 @@ namespace jm {
 
         template<class Wildcard>
         memory_signature(std::initializer_list<unsigned char> pattern, Wildcard wildcard)
-                : _pattern(std::unique_ptr<unsigned char[]>(new unsigned char[pattern.size()]))
+                : _pattern(std::make_unique<unsigned char[]>(pattern.size()))
                 , _end(_pattern.get() + pattern.size())
                 , _wildcard(static_cast<unsigned char>(wildcard))
         {
@@ -134,9 +132,9 @@ namespace jm {
         }
 
         /// masked signature constructors ------------------------------------------------------------------------------
-        template<class Unknown>
+        template<class Unknown = unsigned char>
         memory_signature(const std::string &pattern, const std::string &mask, Unknown unknown_byte_identifier = '?')
-                : _pattern(std::unique_ptr<unsigned char[]>(new unsigned char[pattern.size()]))
+                : _pattern(std::make_unique<unsigned char[]>(pattern.size()))
                 , _end(_pattern.get() + pattern.size())
                 , _wildcard(detail::find_wildcard_masked(pattern.begin(), pattern.end(), mask.begin()
                                                          , unknown_byte_identifier))
@@ -144,13 +142,13 @@ namespace jm {
             if (pattern.size() != mask.size())
                 throw std::invalid_argument("pattern size did not match mask size");
 
-            masked_to_wilcard(pattern.begin(), pattern.end(), mask.begin(), unknown_byte_identifier);
+            masked_to_wildcard(pattern.begin(), pattern.end(), mask.begin(), unknown_byte_identifier);
         }
 
         template<class Byte>
         memory_signature(std::initializer_list<Byte> pattern, std::initializer_list<Byte> mask
                          , Byte unknown_byte_identifier = '?')
-                : _pattern(std::unique_ptr<unsigned char[]>(new unsigned char[pattern.size()]))
+                : _pattern(std::make_unique<unsigned char[]>(pattern.size()))
                 , _end(_pattern.get() + pattern.size())
                 , _wildcard(detail::find_wildcard_masked(pattern.begin(), pattern.end(), mask.begin()
                                                          , unknown_byte_identifier))
@@ -158,7 +156,7 @@ namespace jm {
             if (pattern.size() != mask.size())
                 throw std::invalid_argument("pattern size did not match mask size");
 
-            masked_to_wilcard(pattern.begin(), pattern.end(), mask.begin(), unknown_byte_identifier);
+            masked_to_wildcard(pattern.begin(), pattern.end(), mask.begin(), unknown_byte_identifier);
         }
 
         /// \brief Searches for first occurrence of stored signature in the range [first, last - signature_length).
