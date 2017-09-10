@@ -35,7 +35,10 @@ namespace jm {
                 , _wildcard(0)
         {}
 
+        /// \brief Destroys the stored signature
+        ~signature() noexcept = default;
 
+        
 
 
         /// \brief Searches for first occurrence of stored signature in the range [first, last - signature_length).
