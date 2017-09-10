@@ -3,6 +3,10 @@ project(memory_signature)
 
 set(CMAKE_CXX_STANDARD 11)
 
-set(SOURCE_FILES library.cpp include/memory_signature.hpp)
-add_library(memory_signature ${SOURCE_FI
-        LES})
+include_directories (${PROJECT_SOURCE_DIR}/include)
+add_library (memory_signature INTERFACE)
+target_include_directories (memory_signature INTERFACE ${PROJECT_SOURCE_DIR}/include)
+target_sources (memory_signature INTERFACE ${PROJECT_SOURCE_DIR}/include/memory_signature.hpp)
+
+enable_testing()
+add_subdirectory (test)
