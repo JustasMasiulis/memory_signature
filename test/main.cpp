@@ -34,15 +34,13 @@ TEST_CASE("memory_signature")
         real[3] = 5;
 
         jm::memory_signature signature;
-        jm::memory_signature wildcard_sig{"\x1\x2\x3\x5", 0x2};
-        jm::memory_signature wildcard_sig2({1, 2, 3, 5}, 2);
-        jm::memory_signature mask_sig("\x1\x2\x3\x5", "x?xx");
-        jm::memory_signature mask_sig2({1, 2, 3, 5}, {1, 0, 1, 1}, 0);
+        jm::memory_signature wildcard_sig({1, 2, 3, 5}, 2);
+        jm::memory_signature mask_sig({1, 2, 3, 5}, "x?xx");
+        jm::memory_signature mask_sig2({1, 2, 3, 5}, {1, 0, 1, 1});
         jm::memory_signature ida_sig("1 ? 3 5");
         jm::memory_signature ida_sig2("01 ?? 3 5");
 
         CHECK(real == wildcard_sig.find(begin, end));
-        CHECK(real == wildcard_sig2.find(begin, end));
         CHECK(real == mask_sig.find(begin, end));
         CHECK(real == mask_sig2.find(begin, end));
         CHECK(real == ida_sig.find(begin, end));
@@ -65,16 +63,14 @@ TEST_CASE("memory_signature")
         real[11] = 0x89;
 
         jm::memory_signature signature;
-        jm::memory_signature wildcard_sig{"\1\xff\x36\x54\xff\x12\xff\x56\xff\xff\xff\x89", 0xff};
-        jm::memory_signature wildcard_sig2({0x1, 0, 0x36, 0x54, 0, 0x12, 0, 0x56, 0, 0, 0, 0x89}, 0);
-        jm::memory_signature mask_sig("\1\xff\x36\x54\xff\x12\xff\x56\xff\xff\xff\x89", "x?xx?x?x???x");
+        jm::memory_signature wildcard_sig({0x1, 0, 0x36, 0x54, 0, 0x12, 0, 0x56, 0, 0, 0, 0x89}, 0);
+        jm::memory_signature mask_sig({0x1, 0, 0x36, 0x54, 0, 0x12, 0, 0x56, 0, 0, 0, 0x89}, "x?xx?x?x???x");
         jm::memory_signature mask_sig2({0x1, 0, 0x36, 0x54, 0, 0x12, 0, 0x56, 0, 0, 0, 0x89}, {1, 0, 1, 1, 0, 1, 0, 1, 0
                                                                                                , 0, 0, 1}, 0);
         jm::memory_signature ida_sig("1 ? 36 54 ? 12 ? 56 ? ? ?? 89");
         jm::memory_signature ida_sig2("01 ?? 36 54 ?? 12 ?? 56 ?? ?? ?? 89");
 
         CHECK(real == wildcard_sig.find(begin, end));
-        CHECK(real == wildcard_sig2.find(begin, end));
         CHECK(real == mask_sig.find(begin, end));
         CHECK(real == mask_sig2.find(begin, end));
         CHECK(real == ida_sig.find(begin, end));
@@ -123,7 +119,7 @@ TEST_CASE("memory_signature")
             jm::memory_signature sig1({0x33, 2, 0x44, 0x55}, {1, 0, 1, 1}, 0);
             jm::memory_signature sig2("33 ? 44 55");
             jm::memory_signature sig3("12");
-            jm::memory_signature sig4("12", "x?");
+            jm::memory_signature sig4({1, 2}, "x?");
             sig3 = sig1;
             sig4 = sig2;
 
@@ -138,7 +134,7 @@ TEST_CASE("memory_signature")
             jm::memory_signature sig1({0x33, 2, 0x44, 0x55}, {1, 0, 1, 1}, 0);
             jm::memory_signature sig2("33 ? 44 55");
             jm::memory_signature sig3("12");
-            jm::memory_signature sig4("12", "x?");
+            jm::memory_signature sig4({1, 2}, "x?");
             sig3 = std::move(sig1);
             sig4 = std::move(sig2);
 

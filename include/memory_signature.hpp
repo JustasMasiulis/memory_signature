@@ -17,14 +17,14 @@
 #ifndef JM_MEMORY_SIGNATURE_HPP
 #define JM_MEMORY_SIGNATURE_HPP
 
-#include <type_traits> // is_integral
 #include <algorithm>   // search
-#include <memory>      // unique_ptr TODO replace this with manual memory management
+#include <memory>      // unique_ptr TODO may want to replace this with manual memory management
 #include <bitset>      // bitset
 
-
+/// \brief main namespace
 namespace jm {
 
+    /// \brief Internal implementation namespace
     namespace detail {
 
         template<class ForwardIt, class Cmp>
@@ -58,25 +58,29 @@ namespace jm {
 
     }
 
+    /// \brief A light wrapper class around a memory signature providing an easy way to search for it in memory
     class memory_signature {
         std::unique_ptr<unsigned char[]> _pattern;
         unsigned char                    *_end;
         unsigned char                    _wildcard;
 
+        /// \private
         std::size_t size() const noexcept { return _end - _pattern.get(); }
 
-        template<class ForwardItPat, class ForwardItSig>
-        void masked_to_wildcard(ForwardItPat first, ForwardItPat last, ForwardItSig first_mask, unsigned char unknown)
+        /// \private
+        template<class ForwardIt1, class ForwardIt2>
+        void masked_to_wildcard(ForwardIt1 first, ForwardIt1 last, ForwardIt2 m_first, unsigned char unknown) noexcept
         {
             auto my_pat = _pattern.get();
-            for (; first != last; ++first, ++first_mask, ++my_pat) {
-                if (*first_mask != unknown)
+            for (; first != last; ++first, ++m_first, ++my_pat) {
+                if (*m_first != unknown)
                     *my_pat = *first;
                 else
                     *my_pat = _wildcard;
             }
         }
 
+        /// \private
         template<class ForwardIt>
         void hybrid_to_wildcard(ForwardIt first, ForwardIt last)
         {
@@ -93,7 +97,7 @@ namespace jm {
                         continue;
 
                     *my_pat++ = std::strtoul(tokens, &end, 16);
-                    end               = tokens;
+                    end = tokens;
                 }
                 else if (*first == '?') {
                     if (!prev_was_wildcard) {
@@ -112,6 +116,7 @@ namespace jm {
 
     public:
         /// \brief Construct a new signature that is empty
+        /// \throw Nothrow guarantee
         explicit constexpr memory_signature() noexcept
                 : _pattern(nullptr)
                 , _end(nullptr)
@@ -120,6 +125,8 @@ namespace jm {
         /// \brief Destroys the stored signature
         ~memory_signature() noexcept = default;
 
+        /// \brief copy constructor
+        /// \throw Strong exception safety guarantee
         memory_signature(const memory_signature &other)
                 : _pattern(std::make_unique<unsigned char[]>(other.size()))
                 , _end(_pattern.get() + other.size())
@@ -128,6 +135,8 @@ namespace jm {
             std::copy(other._pattern.get(), other._end, _pattern.get());
         }
 
+        /// \brief copy assignment operator
+        /// \throw Strong exception safety guarantee
         memory_signature &operator=(const memory_signature &other)
         {
             _pattern = std::make_unique<unsigned char[]>(other.size());
@@ -137,11 +146,15 @@ namespace jm {
             return *this;
         }
 
+        /// \brief Move constructor
+        /// \throw Nothrow guarantee
         memory_signature(memory_signature &&other) noexcept
                 : _pattern(std::move(other._pattern))
                 , _end(other._end)
                 , _wildcard(other._wildcard) {}
 
+        /// \brief Move assignment operator
+        /// \throw Nothrow guarantee
         memory_signature &operator=(memory_signature &&other) noexcept
         {
             _pattern  = std::move(other._pattern);
@@ -150,19 +163,15 @@ namespace jm {
             return *this;
         }
 
-
-        /// wildcard signature constructors ----------------------------------------------------------------------------
-        template<class Wildcard, class = typename std::enable_if<std::is_integral<Wildcard>::value, void>::type>
-        memory_signature(const std::string &pattern, Wildcard wildcard)
-                : _pattern(std::make_unique<unsigned char[]>(pattern.size()))
-                , _end(_pattern.get() + pattern.size())
-                , _wildcard(static_cast<unsigned char>(wildcard))
-        {
-            std::copy(std::begin(pattern), std::end(pattern), _pattern.get());
-        }
-
+        /// \brief Construct a new signature using a pattern and a wildcard.
+        /// \param pattern The pattern in the form of an integral initializer list.
+        /// \param wildcard The value to represent an unknown byte in the pattern.
+        /// \code{.cpp}
+        /// // will match any byte sequence where first byte is 0x11, third is 0x13 and fourth is 0x14
+        /// memory_signature{{0x11, 0x12, 0x13, 0x14"}, 0x12};
+        /// \endcode
         template<class Wildcard>
-        memory_signature(std::initializer_list<unsigned char> pattern, Wildcard wildcard)
+        memory_signature(std::initializer_list<Wildcard> pattern, Wildcard wildcard)
                 : _pattern(std::make_unique<unsigned char[]>(pattern.size()))
                 , _end(_pattern.get() + pattern.size())
                 , _wildcard(static_cast<unsigned char>(wildcard))
@@ -173,20 +182,20 @@ namespace jm {
         /// masked signature constructors ------------------------------------------------------------------------------
 
         /// \brief Construct a new signature using a pattern and a mask.
-        /// \param pattern The pattern in the form of a string.
+        /// \param pattern The pattern in the form of an integral initializer list.
         /// \param mask The mask for pattern as a string where value of unknown_byte_identifier
         ///             is the unknown byte which can be anything in the pattern. By default '?'.
-        /// \param unknown_byte_identifier The value to represent an unknown byte in the mask
+        /// \param unknown_byte_identifier The value to represent an unknown byte in the mask.
         /// \code{.cpp}
         /// // will match any byte sequence where first byte is 0x11, third is 0x13 and fourth is 0x14
-        /// memory_signature{"\x11\x12\x13\x14"}, "x?xx", '?'};
+        /// memory_signature{{0x11, 0x12, 0x13, 0x14}, "x?xx", '?'};
         /// \endcode
-        template<class Unknown = unsigned char>
-        memory_signature(const std::string &pattern, const std::string &mask, Unknown unknown_byte_identifier = '?')
+        template<class Byte>
+        memory_signature(std::initializer_list<Byte> pattern, const std::string &mask
+                         , Byte unknown_byte_identifier = '?')
                 : _pattern(std::make_unique<unsigned char[]>(pattern.size()))
                 , _end(_pattern.get() + pattern.size())
-                , _wildcard(detail::find_wildcard_masked(pattern.begin(), pattern.end(), mask.begin()
-                                                         , unknown_byte_identifier))
+                , _wildcard(detail::find_wildcard_masked(pattern.begin(), pattern.end(), mask.begin(), unknown_byte_identifier))
         {
             if (pattern.size() != mask.size())
                 throw std::invalid_argument("pattern size did not match mask size");
@@ -198,18 +207,16 @@ namespace jm {
         /// \param pattern The pattern in the form of an integral initializer list.
         /// \param mask The mask for pattern as an integral initializer list where value of unknown_byte_identifier
         ///             is the unknown byte which can be anything in the pattern. By default 0.
-        /// \param unknown_byte_identifier The value to represent an unknown byte in the mask
+        /// \param unknown_byte_identifier The value to represent an unknown byte in the mask.
         /// \code{.cpp}
         /// // will match any byte sequence where first byte is 0x11, third is 0x13 and fourth is 0x14
         /// memory_signature{{0x11, 0x12, 0x13, 0x14}, {1, 0, 1, 1}, 0};
         /// \endcode
         template<class Byte>
-        memory_signature(std::initializer_list<Byte> pattern, std::initializer_list<Byte> mask
-                         , Byte unknown_byte_identifier = 0)
+        memory_signature(std::initializer_list<Byte> pattern, std::initializer_list<Byte> mask, Byte unknown_byte_identifier = 0)
                 : _pattern(std::make_unique<unsigned char[]>(pattern.size()))
                 , _end(_pattern.get() + pattern.size())
-                , _wildcard(detail::find_wildcard_masked(pattern.begin(), pattern.end(), mask.begin()
-                                                         , unknown_byte_identifier))
+                , _wildcard(detail::find_wildcard_masked(pattern.begin(), pattern.end(), mask.begin(), unknown_byte_identifier))
         {
             if (pattern.size() != mask.size())
                 throw std::invalid_argument("pattern size did not match mask size");
@@ -221,7 +228,7 @@ namespace jm {
 
         /// \brief Construct a new ida style signature.
         /// \param pattern The pattern in the form of a string where numbers and letter are transformed to known bytes
-        ///                 and question marks are unknown bytes
+        ///                 and question marks are unknown bytes.
         /// \code{.cpp}
         /// // will match any byte sequence where first byte is 0x1, third is 0x13 and fourth is 0x14
         /// memory_signature{"01 ?? 13 14"};
@@ -246,8 +253,7 @@ namespace jm {
             if (_pattern.get() == _end)
                 return last;
 
-            return std::search(first, last, _pattern.get(), _end, [wildcard = _wildcard](unsigned char lhs
-                                                                                         , unsigned char rhs) {
+            return std::search(first, last, _pattern.get(), _end, [wildcard = _wildcard](unsigned char lhs, unsigned char rhs) {
                 return lhs == rhs || rhs == wildcard;
             });
         }
