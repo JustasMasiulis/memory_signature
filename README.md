@@ -17,5 +17,6 @@ jm::memory_signature ida_sig("1 ? 3 5");
 jm::memory_signature ida_sig2("01 ?? 03 05");
 
 // to search for the pattern the class has .find member functions that takes 2 iterators
+// and returns an iterator to the first occurence
 wildcard_sig.find(search_range_begin, search_range_end);
 ```
