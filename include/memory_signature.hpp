@@ -85,7 +85,7 @@ namespace jm {
         void hybrid_to_wildcard(ForwardIt first, ForwardIt last)
         {
             char tokens[2] = {0};
-            int  n_tokens  = 0;
+            int  n_tokens  = 0; // do not move - will act as a delimiter for tokens
             auto my_pat    = _pattern.get();
 
             for (bool prev_was_wildcard = false; first != last; ++first) {

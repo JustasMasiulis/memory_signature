@@ -7,7 +7,7 @@
 inline void fill_garbage(volatile unsigned char gar[0x1000])
 {
     for (int i = 0; i < 0x1000; ++i)
-        gar[i] = i;
+        gar[i] = static_cast<unsigned char>(i);
 }
 
 inline auto get_random_ptr_in(volatile unsigned char gar[0x1000])
@@ -23,7 +23,7 @@ TEST_CASE("memory_signature")
     volatile unsigned char garbage[0x1000] = {0};
     fill_garbage(garbage);
 
-    const auto begin = reinterpret_cast<volatile unsigned char *>(&garbage);
+    const auto *begin = garbage;
     const auto end   = begin + 0x1000;
 
     SECTION("small signature 1 ? 3 5") {

@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.3)
 project(memory_signature)
 
 set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include_directories (${PROJECT_SOURCE_DIR}/include)
 add_library (memory_signature INTERFACE)
