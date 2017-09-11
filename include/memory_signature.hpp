@@ -18,7 +18,7 @@
 #define JM_MEMORY_SIGNATURE_HPP
 
 #include <algorithm>   // search
-#include <memory>      // unique_ptr TODO may want to replace this with manual memory management
+#include <memory>      // unique_ptr
 #include <bitset>      // bitset
 
 /// \brief main namespace
@@ -84,20 +84,19 @@ namespace jm {
         template<class ForwardIt>
         void hybrid_to_wildcard(ForwardIt first, ForwardIt last)
         {
-            /// TODO make this nicer and add error checking
-            char tokens[2];
-            char *end              = tokens;
-            auto my_pat            = _pattern.get();
-            bool prev_was_wildcard = false;
+            char tokens[2] = {0};
+            int  n_tokens  = 0;
+            auto my_pat    = _pattern.get();
 
-            for (; first != last; ++first) {
+            for (bool prev_was_wildcard = false; first != last; ++first) {
                 if (*first == ' ') {
                     prev_was_wildcard = false;
-                    if (tokens == end)
+                    if (!n_tokens)
                         continue;
 
-                    *my_pat++ = std::strtoul(tokens, &end, 16);
-                    end = tokens;
+                    n_tokens = 0; // will act as delimiter for the string
+                    *my_pat++ = std::strtoul(tokens, nullptr, 16);
+                    tokens[1] = 0; // reset it in case it isn't replaced
                 }
                 else if (*first == '?') {
                     if (!prev_was_wildcard) {
@@ -105,11 +104,12 @@ namespace jm {
                         prev_was_wildcard = true;
                     }
                 }
-                else if (*first != '0')
-                    *end++ = *first;
+                else
+                    tokens[n_tokens++] = *first;
             }
-            if (tokens != end)
-                *my_pat++          = std::strtoul(tokens, &end, 16);
+
+            if (n_tokens)
+                *my_pat++ = std::strtoul(tokens, nullptr, 16);
 
             _end = my_pat;
         }
@@ -195,7 +195,8 @@ namespace jm {
                          , Byte unknown_byte_identifier = '?')
                 : _pattern(std::make_unique<unsigned char[]>(pattern.size()))
                 , _end(_pattern.get() + pattern.size())
-                , _wildcard(detail::find_wildcard_masked(pattern.begin(), pattern.end(), mask.begin(), unknown_byte_identifier))
+                , _wildcard(detail::find_wildcard_masked(pattern.begin(), pattern.end(), mask.begin()
+                                                         , unknown_byte_identifier))
         {
             if (pattern.size() != mask.size())
                 throw std::invalid_argument("pattern size did not match mask size");
@@ -213,10 +214,12 @@ namespace jm {
         /// memory_signature{{0x11, 0x12, 0x13, 0x14}, {1, 0, 1, 1}, 0};
         /// \endcode
         template<class Byte>
-        memory_signature(std::initializer_list<Byte> pattern, std::initializer_list<Byte> mask, Byte unknown_byte_identifier = 0)
+        memory_signature(std::initializer_list<Byte> pattern, std::initializer_list<Byte> mask
+                         , Byte unknown_byte_identifier = 0)
                 : _pattern(std::make_unique<unsigned char[]>(pattern.size()))
                 , _end(_pattern.get() + pattern.size())
-                , _wildcard(detail::find_wildcard_masked(pattern.begin(), pattern.end(), mask.begin(), unknown_byte_identifier))
+                , _wildcard(detail::find_wildcard_masked(pattern.begin(), pattern.end(), mask.begin()
+                                                         , unknown_byte_identifier))
         {
             if (pattern.size() != mask.size())
                 throw std::invalid_argument("pattern size did not match mask size");
@@ -253,7 +256,8 @@ namespace jm {
             if (_pattern.get() == _end)
                 return last;
 
-            return std::search(first, last, _pattern.get(), _end, [wildcard = _wildcard](unsigned char lhs, unsigned char rhs) {
+            return std::search(first, last, _pattern.get(), _end, [wildcard = _wildcard](unsigned char lhs
+                                                                                         , unsigned char rhs) {
                 return lhs == rhs || rhs == wildcard;
             });
         }
