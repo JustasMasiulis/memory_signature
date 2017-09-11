@@ -146,5 +146,4 @@ TEST_CASE("memory_signature")
             CHECK(real == sig4.find(begin, end));
         }
     }
-
 }

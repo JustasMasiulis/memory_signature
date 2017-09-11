@@ -171,6 +171,16 @@ namespace jm {
         }
 
         /// masked signature constructors ------------------------------------------------------------------------------
+
+        /// \brief Construct a new signature using a pattern and a mask.
+        /// \param pattern The pattern in the form of a string.
+        /// \param mask The mask for pattern as a string where value of unknown_byte_identifier
+        ///             is the unknown byte which can be anything in the pattern. By default '?'.
+        /// \param unknown_byte_identifier The value to represent an unknown byte in the mask
+        /// \code{.cpp}
+        /// // will match any byte sequence where first byte is 0x11, third is 0x13 and fourth is 0x14
+        /// memory_signature{"\x11\x12\x13\x14"}, "x?xx", '?'};
+        /// \endcode
         template<class Unknown = unsigned char>
         memory_signature(const std::string &pattern, const std::string &mask, Unknown unknown_byte_identifier = '?')
                 : _pattern(std::make_unique<unsigned char[]>(pattern.size()))
@@ -184,9 +194,18 @@ namespace jm {
             masked_to_wildcard(pattern.begin(), pattern.end(), mask.begin(), unknown_byte_identifier);
         }
 
+        /// \brief Construct a new signature using a pattern and a mask.
+        /// \param pattern The pattern in the form of an integral initializer list.
+        /// \param mask The mask for pattern as an integral initializer list where value of unknown_byte_identifier
+        ///             is the unknown byte which can be anything in the pattern. By default 0.
+        /// \param unknown_byte_identifier The value to represent an unknown byte in the mask
+        /// \code{.cpp}
+        /// // will match any byte sequence where first byte is 0x11, third is 0x13 and fourth is 0x14
+        /// memory_signature{{0x11, 0x12, 0x13, 0x14}, {1, 0, 1, 1}, 0};
+        /// \endcode
         template<class Byte>
         memory_signature(std::initializer_list<Byte> pattern, std::initializer_list<Byte> mask
-                         , Byte unknown_byte_identifier = '?')
+                         , Byte unknown_byte_identifier = 0)
                 : _pattern(std::make_unique<unsigned char[]>(pattern.size()))
                 , _end(_pattern.get() + pattern.size())
                 , _wildcard(detail::find_wildcard_masked(pattern.begin(), pattern.end(), mask.begin()
@@ -199,6 +218,15 @@ namespace jm {
         }
 
         /// hybrid / ida style signature constructors ------------------------------------------------------------------
+
+        /// \brief Construct a new ida style signature.
+        /// \param pattern The pattern in the form of a string where numbers and letter are transformed to known bytes
+        ///                 and question marks are unknown bytes
+        /// \code{.cpp}
+        /// // will match any byte sequence where first byte is 0x1, third is 0x13 and fourth is 0x14
+        /// memory_signature{"01 ?? 13 14"};
+        /// memory_signature{"1 ? 13 14"};
+        /// \endcode
         memory_signature(const std::string &pattern)
                 : _pattern(std::make_unique<unsigned char[]>(pattern.size()))
                 , _end(_pattern.get() + pattern.size())
@@ -208,6 +236,8 @@ namespace jm {
         }
 
         /// \brief Searches for first occurrence of stored signature in the range [first, last - signature_length).
+        /// \param first The first element of the range in which to search for.
+        /// \param last The one past the last element of the range in which to search for.
         /// \return Returns iterator to the beginning of signature.
         ///         If no such signature is found or if signature is empty returns last.
         template<class ForwardIt>
