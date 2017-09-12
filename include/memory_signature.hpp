@@ -17,9 +17,10 @@
 #ifndef JM_MEMORY_SIGNATURE_HPP
 #define JM_MEMORY_SIGNATURE_HPP
 
-#include <algorithm>   // search
-#include <memory>      // unique_ptr
-#include <bitset>      // bitset
+#include <algorithm> // search
+#include <iterator>  // begin, end
+#include <memory>    // unique_ptr
+#include <bitset>    // bitset
 
 /// \brief main namespace
 namespace jm {
@@ -257,6 +258,24 @@ namespace jm {
                 return last;
 
             return std::search(first, last, _pattern.get(), _end, [wildcard = _wildcard](unsigned char lhs
+                                                                                         , unsigned char rhs) {
+                return lhs == rhs || rhs == wildcard;
+            });
+        }
+
+        /// \brief Searches for first occurrence of stored signature in the given range.
+        /// \param range The range in which to search for.
+        /// \return Returns iterator to the beginning of signature.
+        ///         If no such signature is found or if signature is empty returns end of range.
+        template<class Range>
+        auto find(const Range& range) const
+        {
+            using std::end;
+            if (_pattern.get() == _end)
+                return end(range);
+
+            using std::begin;
+            return std::search(begin(range), end(range), _pattern.get(), _end, [wildcard = _wildcard](unsigned char lhs
                                                                                          , unsigned char rhs) {
                 return lhs == rhs || rhs == wildcard;
             });
