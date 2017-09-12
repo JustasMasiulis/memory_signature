@@ -25,7 +25,7 @@ matrix:
       addons: &clang40
         apt:
           sources: ['llvm-toolchain-trusty-4.0', 'ubuntu-toolchain-r-test']
-          packages: ['clang-4.0', -libc++-dev, -libc++abi-dev]
+          packages: ['clang-4.0', libc++-dev, libc++abi-dev]
       env: COMPILER='clang++-4.0' BUILD_TYPE='Release'
 
     - os: linux
