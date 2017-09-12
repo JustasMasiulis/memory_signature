@@ -4,27 +4,31 @@
 #include <memory_signature.hpp>
 #include <random>
 
-inline void fill_garbage(volatile unsigned char gar[0x1000])
+constexpr static auto garbage_size = 0x10000;
+
+inline void fill_garbage(unsigned char gar[garbage_size])
 {
-    for (int i = 0; i < 0x1000; ++i)
+    for (int i = 0; i < garbage_size; ++i)
         gar[i] = static_cast<unsigned char>(i);
 }
 
-inline auto get_random_ptr_in(volatile unsigned char gar[0x1000])
+inline auto get_random_ptr_in(unsigned char gar[garbage_size])
 {
     std::random_device                 r;
-    std::default_random_engine         rand(r());
-    std::uniform_int_distribution<int> uniform_dist(1000, 0x1000 - 100);
+    std::mt19937                       rand(r());
+    std::uniform_int_distribution<int> uniform_dist(1000, garbage_size - 100);
     return &gar[0] + uniform_dist(rand);
 }
 
 TEST_CASE("memory_signature")
 {
-    volatile unsigned char garbage[0x1000] = {0};
+    unsigned char garbage[garbage_size] = {0};
     fill_garbage(garbage);
 
     const auto *begin = garbage;
-    const auto end   = begin + 0x1000;
+    const auto end    = begin + garbage_size;
+    INFO("begins at " << begin << '\n');
+    INFO("ends at " << begin << '\n');
 
     SECTION("small signature 1 ? 3 5") {
         const auto real = get_random_ptr_in(garbage);
