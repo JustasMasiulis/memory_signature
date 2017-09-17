@@ -1,4 +1,4 @@
-# memory_signature [![Build Status](https://travis-ci.com/JustasMasiulis/memory_signature.svg?token=pq8nGGFpC3YcRv1Qh2jz&branch=master)](https://travis-ci.com/JustasMasiulis/memory_signature)
+# memory_signature [![Build Status](https://travis-ci.com/JustasMasiulis/memory_signature.svg?token=pq8nGGFpC3YcRv1Qh2jz&branch=master)](https://travis-ci.com/JustasMasiulis/memory_signature) [![Build status](https://ci.appveyor.com/api/projects/status/fa5krpuii0s5535i?svg=true)](https://ci.appveyor.com/project/JustasMasiulis/memory-signature)
 A light wrapper class that accepts numerous types of memory signature types and an easy way to search for them
 
 ## installation
