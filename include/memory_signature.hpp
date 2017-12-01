@@ -271,17 +271,11 @@ namespace jm {
         auto find(const Range& range) const
         {
             using std::end;
-            if (_pattern.get() == _end)
-                return end(range);
-
             using std::begin;
-            return std::search(begin(range), end(range), _pattern.get(), _end, [wildcard = _wildcard](unsigned char lhs
-                                                                                         , unsigned char rhs) {
-                return lhs == rhs || rhs == wildcard;
-            });
+            return find(begin(range), end(range);
         }
     };
 
-}
+} // namespace jm
 
 #endif // include guard
