@@ -2,7 +2,7 @@
 A light wrapper class that accepts numerous types of memory signature types and an easy way to search for them
 
 ## installation
-the library requires c++14 and is headers only so copying it into your project directory and including it is enough.
+the library requires c++11 and is headers only so copying it into your project directory and including it is enough.
 
 ## small example
 ```c++
