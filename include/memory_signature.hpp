@@ -19,6 +19,7 @@
 
 #include <algorithm> // search
 #include <iterator>  // begin, end
+#include <cstdint>   // uint8_t
 #include <memory>    // unique_ptr
 #include <bitset>    // bitset
 
@@ -29,48 +30,48 @@ namespace jm {
     namespace detail {
 
         template<class ForwardIt, class Cmp>
-        inline unsigned char find_wildcard(ForwardIt first, ForwardIt last, Cmp cmp)
+        inline std::uint8_t find_wildcard(ForwardIt first, ForwardIt last, Cmp cmp)
         {
             std::bitset<256> bits;
 
             for (; first != last; ++first)
-                bits[static_cast<unsigned char>(*first)] = cmp(*first);
+                bits[static_cast<std::uint8_t>(*first)] = cmp(*first);
 
             for (auto i = 0; i < 256; ++i)
                 if (!bits[i])
-                    return static_cast<unsigned char>(i);
+                    return static_cast<std::uint8_t>(i);
 
             throw std::range_error("unable to find unused byte in the provided pattern");
         }
 
         template<class ForwardIt1, class ForwardIt2>
-        inline auto find_wildcard_masked(ForwardIt1 first, ForwardIt1 last, ForwardIt2 mask_first, unsigned char unk)
+        inline std::uint8_t find_wildcard_masked(ForwardIt1 first, ForwardIt1 last, ForwardIt2 mask_first, std::uint8_t unk)
         {
-            return find_wildcard(first, last, [=](auto) mutable {
+            return find_wildcard(first, last, [=](std::uint8_t) mutable {
                 return *mask_first++ != unk;
             });
         }
 
         template<class ForwardIt>
-        inline auto find_wildcard_hybrid(ForwardIt first, ForwardIt last)
+        inline std::uint8_t find_wildcard_hybrid(ForwardIt first, ForwardIt last)
         {
-            return find_wildcard(first, last, [](auto b) { return !(b != ' ' && b != '?'); });
+            return find_wildcard(first, last, [](std::uint8_t b) { return !(b != ' ' && b != '?'); });
         }
 
     }
 
     /// \brief A light wrapper class around a memory signature providing an easy way to search for it in memory
     class memory_signature {
-        std::unique_ptr<unsigned char[]> _pattern;
-        unsigned char                    *_end;
-        unsigned char                    _wildcard;
+        std::unique_ptr<std::uint8_t[]> _pattern;
+        std::uint8_t*                   _end;
+        std::uint8_t                    _wildcard;
 
         /// \private
         std::size_t size() const noexcept { return _end - _pattern.get(); }
 
         /// \private
         template<class ForwardIt1, class ForwardIt2>
-        void masked_to_wildcard(ForwardIt1 first, ForwardIt1 last, ForwardIt2 m_first, unsigned char unknown) noexcept
+        void masked_to_wildcard(ForwardIt1 first, ForwardIt1 last, ForwardIt2 m_first, std::uint8_t unknown) noexcept
         {
             auto my_pat = _pattern.get();
             for (; first != last; ++first, ++m_first, ++my_pat) {
@@ -129,7 +130,7 @@ namespace jm {
         /// \brief copy constructor
         /// \throw Strong exception safety guarantee
         memory_signature(const memory_signature &other)
-                : _pattern(std::make_unique<unsigned char[]>(other.size()))
+                : _pattern(new std::uint8_t[other.size()])
                 , _end(_pattern.get() + other.size())
                 , _wildcard(other._wildcard)
         {
@@ -138,11 +139,17 @@ namespace jm {
 
         /// \brief copy assignment operator
         /// \throw Strong exception safety guarantee
+        /// \note If size of current signature is larger than the others
+        ///       nothrow guarantee is given.
         memory_signature &operator=(const memory_signature &other)
         {
-            _pattern = std::make_unique<unsigned char[]>(other.size());
+            // check if we need to re-allocate the storage
+            const auto new_size = other.size();
+            if(size() < new_size)
+                _pattern.reset(new std::uint8_t[other.size()]);
+
             std::copy(other._pattern.get(), other._end, _pattern.get());
-            _end      = _pattern.get() + other.size();
+            _end      = _pattern.get() + new_size;
             _wildcard = other._wildcard;
             return *this;
         }
@@ -169,15 +176,15 @@ namespace jm {
         /// \param wildcard The value to represent an unknown byte in the pattern.
         /// \code{.cpp}
         /// // will match any byte sequence where first byte is 0x11, third is 0x13 and fourth is 0x14
-        /// memory_signature{{0x11, 0x12, 0x13, 0x14"}, 0x12};
+        /// memory_signature{{0x11, 0x12, 0x13, 0x14}, 0x12};
         /// \endcode
         template<class Wildcard>
         memory_signature(std::initializer_list<Wildcard> pattern, Wildcard wildcard)
-                : _pattern(std::make_unique<unsigned char[]>(pattern.size()))
+                : _pattern(new std::uint8_t[pattern.size()])
                 , _end(_pattern.get() + pattern.size())
-                , _wildcard(static_cast<unsigned char>(wildcard))
+                , _wildcard(static_cast<std::uint8_t>(wildcard))
         {
-            std::copy(std::begin(pattern), std::end(pattern), _pattern.get());
+            std::copy(pattern.begin(), pattern.end(), _pattern.get());
         }
 
         /// masked signature constructors ------------------------------------------------------------------------------
@@ -194,7 +201,7 @@ namespace jm {
         template<class Byte>
         memory_signature(std::initializer_list<Byte> pattern, const std::string &mask
                          , Byte unknown_byte_identifier = '?')
-                : _pattern(std::make_unique<unsigned char[]>(pattern.size()))
+                : _pattern(new std::uint8_t[pattern.size()])
                 , _end(_pattern.get() + pattern.size())
                 , _wildcard(detail::find_wildcard_masked(pattern.begin(), pattern.end(), mask.begin()
                                                          , unknown_byte_identifier))
@@ -217,7 +224,7 @@ namespace jm {
         template<class Byte>
         memory_signature(std::initializer_list<Byte> pattern, std::initializer_list<Byte> mask
                          , Byte unknown_byte_identifier = 0)
-                : _pattern(std::make_unique<unsigned char[]>(pattern.size()))
+                : _pattern(new std::uint8_t[pattern.size()])
                 , _end(_pattern.get() + pattern.size())
                 , _wildcard(detail::find_wildcard_masked(pattern.begin(), pattern.end(), mask.begin()
                                                          , unknown_byte_identifier))
@@ -239,7 +246,7 @@ namespace jm {
         /// memory_signature{"1 ? 13 14"};
         /// \endcode
         memory_signature(const std::string &pattern)
-                : _pattern(std::make_unique<unsigned char[]>(pattern.size()))
+                : _pattern(new std::uint8_t[pattern.size()])
                 , _end(_pattern.get() + pattern.size())
                 , _wildcard(detail::find_wildcard_hybrid(pattern.begin(), pattern.end()))
         {
@@ -257,9 +264,10 @@ namespace jm {
             if (_pattern.get() == _end)
                 return last;
 
-            return std::search(first, last, _pattern.get(), _end, [wildcard = _wildcard](unsigned char lhs
-                                                                                         , unsigned char rhs) {
-                return lhs == rhs || rhs == wildcard;
+            // we need this to avoid capture of this in c++11
+            const auto my_wildcard = _wildcard;
+            return std::search(first, last, _pattern.get(), _end, [=](std::uint8_t lhs, std::uint8_t rhs) {
+                return lhs == rhs || rhs == my_wildcard;
             });
         }
 
@@ -268,7 +276,7 @@ namespace jm {
         /// \return Returns iterator to the beginning of signature.
         ///         If no such signature is found or if signature is empty returns end of range.
         template<class Range>
-        auto find(const Range& range) const
+        auto find(const Range& range) const -> decltype(begin(range))
         {
             using std::end;
             using std::begin;
