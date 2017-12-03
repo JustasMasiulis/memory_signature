@@ -272,7 +272,7 @@ namespace jm {
         {
             using std::end;
             using std::begin;
-            return find(begin(range), end(range);
+            return find(begin(range), end(range));
         }
     };
 
