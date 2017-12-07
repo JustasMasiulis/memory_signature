@@ -12,7 +12,7 @@ inline void fill_garbage(std::uint8_t range[garbage_size])
 		range[i] = static_cast<std::uint8_t>(i);
 }
 
-inline auto choose_random_pointer_in_range(std::uint8_t range[garbage_size])
+inline std::uint8_t* choose_random_pointer_in_range(std::uint8_t range[garbage_size])
 {
     std::random_device                 r;
     std::mt19937                       rand(r());
