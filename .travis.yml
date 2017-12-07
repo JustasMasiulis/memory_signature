@@ -65,7 +65,7 @@ install:
 before_script:
   - export CXX=${COMPILER}
   - cd ${TRAVIS_BUILD_DIR}
-  - cmake -H. -BBuild -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -ENABLE_SANITIZERS=${SANITIZE_ALL} -Wdev
+  - cmake -H. -BBuild -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DENABLE_SANITIZERS=${SANITIZE_ALL} -Wdev
   - cd Build
 
 script:
