@@ -6,32 +6,32 @@
 
 constexpr static auto garbage_size = 0x10000;
 
-inline void fill_garbage(unsigned char gar[garbage_size])
+inline void fill_garbage(std::uint8_t range[garbage_size])
 {
     for (int i = 0; i < garbage_size; ++i)
-        gar[i] = static_cast<unsigned char>(i);
+		range[i] = static_cast<std::uint8_t>(i);
 }
 
-inline auto get_random_ptr_in(unsigned char gar[garbage_size])
+inline auto choose_random_pointer_in_range(std::uint8_t range[garbage_size])
 {
     std::random_device                 r;
     std::mt19937                       rand(r());
     std::uniform_int_distribution<int> uniform_dist(1000, garbage_size - 100);
-    return &gar[0] + uniform_dist(rand);
+    return &range[0] + uniform_dist(rand);
 }
 
 TEST_CASE("memory_signature")
 {
-    unsigned char garbage[garbage_size] = {0};
+	std::uint8_t garbage[garbage_size] = { 0 };
     fill_garbage(garbage);
 
     const auto *begin = garbage;
     const auto end    = begin + garbage_size;
     INFO("begins at " << begin << '\n');
-    INFO("ends at " << begin << '\n');
+    INFO("ends at "   << end   << '\n');
 
     SECTION("small signature 1 ? 3 5") {
-        const auto real = get_random_ptr_in(garbage);
+        const auto real = choose_random_pointer_in_range(garbage);
         real[0] = 1;
         real[1] = 20;
         real[2] = 3;
@@ -52,7 +52,7 @@ TEST_CASE("memory_signature")
     }
 
     SECTION("medium sized signature 01 ?? 36 54 ?? 12 ?? 56 ?? ?? ?? 89") {
-        const auto real = get_random_ptr_in(garbage);
+        const auto real = choose_random_pointer_in_range(garbage);
         real[0]  = 1;
         real[1]  = 54;
         real[2]  = 0x36;
@@ -82,7 +82,7 @@ TEST_CASE("memory_signature")
     }
 
     SECTION("constructors") {
-        const auto real = get_random_ptr_in(garbage);
+        const auto real = choose_random_pointer_in_range(garbage);
         real[0] = 6;
         real[1] = 20;
         real[2] = 2;
@@ -113,7 +113,7 @@ TEST_CASE("memory_signature")
     }
 
     SECTION("assignment") {
-        const auto real = get_random_ptr_in(garbage);
+        const auto real = choose_random_pointer_in_range(garbage);
         real[0] = 0x33;
         real[1] = 20;
         real[2] = 0x44;

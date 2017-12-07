@@ -12,12 +12,12 @@ matrix:
         apt:
           sources: ['ubuntu-toolchain-r-test']
           packages: ['g++-6']
-      env: COMPILER='g++-6' BUILD_TYPE='Release'
+      env: COMPILER='g++-6' BUILD_TYPE='Release' SANITIZE_ALL='OFF'
 
     - os: linux
       compiler: gcc
       addons: *gcc6
-      env: COMPILER='g++-6' BUILD_TYPE='Debug'
+      env: COMPILER='g++-6' BUILD_TYPE='Debug' SANITIZE_ALL='OFF'
 
     # Linux C++14 Clang builds
     - os: linux
@@ -26,24 +26,30 @@ matrix:
         apt:
           sources: ['llvm-toolchain-trusty-4.0', 'ubuntu-toolchain-r-test']
           packages: ['clang-4.0', 'g++-6']
-      env: COMPILER='clang++-4.0' BUILD_TYPE='Release'
+      env: COMPILER='clang++-4.0' BUILD_TYPE='Release' SANITIZE_ALL='OFF'
 
     - os: linux
       compiler: clang
       addons: *clang40
-      env: COMPILER='clang++-4.0' BUILD_TYPE='Debug'
+      env: COMPILER='clang++-4.0' BUILD_TYPE='Debug' SANITIZE_ALL='OFF'
+
+	# Linux c++ Clang sanitized builds
+	- os: linux
+      compiler: clang
+      addons: *clang40
+      env: COMPILER='clang++-4.0' BUILD_TYPE='Debug' SANITIZE_ALL='ON'
 
     # OSX C++14 Clang Builds
 
     - os: osx
       osx_image: xcode8.3
       compiler: clang
-      env: COMPILER='clang++' BUILD_TYPE='Debug'
+      env: COMPILER='clang++' BUILD_TYPE='Debug' SANITIZE_ALL='OFF'
 
     - os: osx
       osx_image: xcode8.3
       compiler: clang
-      env: COMPILER='clang++' BUILD_TYPE='Release'
+      env: COMPILER='clang++' BUILD_TYPE='Release' SANITIZE_ALL='OFF'
 
 
 install:
@@ -60,7 +66,7 @@ install:
 before_script:
   - export CXX=${COMPILER}
   - cd ${TRAVIS_BUILD_DIR}
-  - cmake -H. -BBuild -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -Wdev
+  - cmake -H. -BBuild -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -ENABLE_SANITIZERS=${SANITIZE_ALL} -Wdev
   - cd Build
 
 script:

@@ -97,7 +97,8 @@ namespace jm {
                         continue;
 
                     n_tokens = 0; // will act as delimiter for the string
-                    *my_pat++ = std::strtoul(tokens, nullptr, 16);
+					// TODO replace this strtoul call
+					*my_pat++ = static_cast<std::uint8_t>(std::strtoul(tokens, nullptr, 16));
                     tokens[1] = 0; // reset it in case it isn't replaced
                 }
                 else if (*first == '?') {
@@ -110,8 +111,8 @@ namespace jm {
                     tokens[n_tokens++] = *first;
             }
 
-            if (n_tokens)
-                *my_pat++ = std::strtoul(tokens, nullptr, 16);
+			if (n_tokens)
+				*my_pat++ = static_cast<std::uint8_t>(std::strtoul(tokens, nullptr, 16));
 
             _end = my_pat;
         }
