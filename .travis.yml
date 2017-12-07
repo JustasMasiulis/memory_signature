@@ -33,14 +33,13 @@ matrix:
       addons: *clang40
       env: COMPILER='clang++-4.0' BUILD_TYPE='Debug' SANITIZE_ALL='OFF'
 
-	# Linux c++ Clang sanitized builds
-	- os: linux
+    # Linux c++ Clang sanitized builds
+    - os: linux
       compiler: clang
       addons: *clang40
       env: COMPILER='clang++-4.0' BUILD_TYPE='Debug' SANITIZE_ALL='ON'
 
     # OSX C++14 Clang Builds
-
     - os: osx
       osx_image: xcode8.3
       compiler: clang
