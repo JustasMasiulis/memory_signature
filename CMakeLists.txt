@@ -14,7 +14,7 @@ if(ENABLE_ASAN)
 endif()
 
 if(ENABLE_MSAN)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O1 -fsanitize=memory -fsanitize=undefined -fno-omit-frame-pointer")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O1 -fsanitize=memory -fsanitize=undefined -fsanitize-memory-track-origins -fno-omit-frame-pointer")
 endif()
 
 enable_testing()
