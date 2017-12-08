@@ -12,12 +12,12 @@ matrix:
         apt:
           sources: ['ubuntu-toolchain-r-test']
           packages: ['g++-6']
-      env: COMPILER='g++-6' BUILD_TYPE='Release' SANITIZE_ALL='OFF'
+      env: COMPILER='g++-6' BUILD_TYPE='Release' SANITIZE_ADDRESS='OFF' SANITIZE_MEMORY='OFF'
 
     - os: linux
       compiler: gcc
       addons: *gcc6
-      env: COMPILER='g++-6' BUILD_TYPE='Debug' SANITIZE_ALL='OFF'
+      env: COMPILER='g++-6' BUILD_TYPE='Debug' SANITIZE_ADDRESS='OFF' SANITIZE_MEMORY='OFF'
 
     # Linux C++14 Clang builds
     - os: linux
@@ -26,29 +26,34 @@ matrix:
         apt:
           sources: ['llvm-toolchain-trusty-4.0', 'ubuntu-toolchain-r-test']
           packages: ['clang-4.0', 'g++-6']
-      env: COMPILER='clang++-4.0' BUILD_TYPE='Release' SANITIZE_ALL='OFF'
+      env: COMPILER='clang++-4.0' BUILD_TYPE='Release' SANITIZE_ADDRESS='OFF' SANITIZE_MEMORY='OFF'
 
     - os: linux
       compiler: clang
       addons: *clang40
-      env: COMPILER='clang++-4.0' BUILD_TYPE='Debug' SANITIZE_ALL='OFF'
+      env: COMPILER='clang++-4.0' BUILD_TYPE='Debug' SANITIZE_ADDRESS='OFF' SANITIZE_MEMORY='OFF'
 
     # Linux c++ Clang sanitized builds
     - os: linux
       compiler: clang
       addons: *clang40
-      env: COMPILER='clang++-4.0' BUILD_TYPE='Debug' SANITIZE_ALL='ON'
+      env: COMPILER='clang++-4.0' BUILD_TYPE='Debug' SANITIZE_ADDRESS='ON' SANITIZE_MEMORY='OFF'
+
+    - os: linux
+      compiler: clang
+      addons: *clang40
+      env: COMPILER='clang++-4.0' BUILD_TYPE='Debug' SANITIZE_ADDRESS='OFF' SANITIZE_MEMORY='ON'
 
     # OSX C++14 Clang Builds
     - os: osx
       osx_image: xcode8.3
       compiler: clang
-      env: COMPILER='clang++' BUILD_TYPE='Debug' SANITIZE_ALL='OFF'
+      env: COMPILER='clang++' BUILD_TYPE='Debug' SANITIZE_ADDRESS='OFF' SANITIZE_MEMORY='OFF'
 
     - os: osx
       osx_image: xcode8.3
       compiler: clang
-      env: COMPILER='clang++' BUILD_TYPE='Release' SANITIZE_ALL='OFF'
+      env: COMPILER='clang++' BUILD_TYPE='Release' SANITIZE_ADDRESS='OFF' SANITIZE_MEMORY='OFF'
 
 
 install:
@@ -67,7 +72,7 @@ before_script:
   - cd ${TRAVIS_BUILD_DIR}
   - mkdir Build
   - cd Build
-  - cmake ../ -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DENABLE_SANITIZERS=${SANITIZE_ALL} -Wdev
+  - cmake ../ -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DENABLE_ASAN=${SANITIZE_ADDRESS} -DENABLE_MSAN=${SANITIZE_MEMORY} -Wdev
 
 
 script:

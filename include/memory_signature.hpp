@@ -121,7 +121,7 @@ namespace jm {
         /// \brief Construct a new signature that is empty
         /// \throw Nothrow guarantee
         explicit constexpr memory_signature() noexcept
-                : _pattern(nullptr)
+                : _pattern()
                 , _end(nullptr)
                 , _wildcard(0) {}
 
