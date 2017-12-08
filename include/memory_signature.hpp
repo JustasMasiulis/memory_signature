@@ -67,7 +67,7 @@ namespace jm {
         std::uint8_t                    _wildcard;
 
         /// \private
-        std::size_t size() const noexcept { return _end - _pattern.get(); }
+        std::ptrdiff_t diff() const noexcept { return _end - _pattern.get(); }
 
         /// \private
         template<class ForwardIt1, class ForwardIt2>
@@ -86,7 +86,7 @@ namespace jm {
         template<class ForwardIt>
         void hybrid_to_wildcard(ForwardIt first, ForwardIt last)
         {
-            char tokens[2] = {0};
+			char tokens[2] = { 0 };
             int  n_tokens  = 0; // do not move - will act as a delimiter for tokens
             auto my_pat    = _pattern.get();
 
@@ -131,12 +131,9 @@ namespace jm {
         /// \brief copy constructor
         /// \throw Strong exception safety guarantee
         memory_signature(const memory_signature &other)
-                : _pattern(new std::uint8_t[other.size()])
-                , _end(_pattern.get() + other.size())
-                , _wildcard(other._wildcard)
-        {
-            std::copy(other._pattern.get(), other._end, _pattern.get());
-        }
+                : _pattern(new std::uint8_t[other.diff()])
+                , _end(std::copy(other._pattern.get(), other._end, _pattern.get()))
+                , _wildcard(other._wildcard) {}
 
         /// \brief copy assignment operator
         /// \throw Strong exception safety guarantee
@@ -145,13 +142,15 @@ namespace jm {
         memory_signature &operator=(const memory_signature &other)
         {
             // check if we need to re-allocate the storage
-            const auto new_size = other.size();
-            if(size() < new_size)
-                _pattern.reset(new std::uint8_t[other.size()]);
+            const auto new_size = other.diff();
+			if (this->diff() < new_size)
+				_pattern.reset(new std::uint8_t[new_size]);
+			// self assignment protection. copy_backward may be a better choice?
+			else if (_end == other._end)
+				return *this;
 
-            std::copy(other._pattern.get(), other._end, _pattern.get());
-            _end      = _pattern.get() + new_size;
-            _wildcard = other._wildcard;
+			_end      = std::copy(other._pattern.get(), other._end, _pattern.get());
+			_wildcard = other._wildcard;
             return *this;
         }
 
@@ -166,7 +165,7 @@ namespace jm {
         /// \throw Nothrow guarantee
         memory_signature &operator=(memory_signature &&other) noexcept
         {
-            _pattern  = std::move(other._pattern);
+			_pattern.reset(other._pattern.release());
             _end      = other._end;
             _wildcard = other._wildcard;
             return *this;
@@ -182,11 +181,8 @@ namespace jm {
         template<class Wildcard>
         memory_signature(std::initializer_list<Wildcard> pattern, Wildcard wildcard)
                 : _pattern(new std::uint8_t[pattern.size()])
-                , _end(_pattern.get() + pattern.size())
-                , _wildcard(static_cast<std::uint8_t>(wildcard))
-        {
-            std::copy(pattern.begin(), pattern.end(), _pattern.get());
-        }
+                , _end(std::copy(pattern.begin(), pattern.end(), _pattern.get()))
+                , _wildcard(static_cast<std::uint8_t>(wildcard)) {}
 
         /// masked signature constructors ------------------------------------------------------------------------------
 
