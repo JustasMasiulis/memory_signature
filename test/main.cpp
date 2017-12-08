@@ -16,8 +16,8 @@ inline std::uint8_t* choose_random_pointer_in_range(std::uint8_t range[garbage_s
 {
     std::random_device                 r;
     std::mt19937                       rand(r());
-    std::uniform_int_distribution<int> uniform_dist(1000, garbage_size - 100);
-    return &range[0] + uniform_dist(rand);
+    std::uniform_int_distribution<int> uniform_dist(0x2ff, garbage_size - 0x100);
+    return range + uniform_dist(rand);
 }
 
 TEST_CASE("memory_signature")
