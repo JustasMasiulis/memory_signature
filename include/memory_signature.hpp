@@ -23,6 +23,7 @@
 #include <memory>    // unique_ptr
 #include <bitset>    // bitset
 
+
 /// \brief main namespace
 namespace jm {
 
@@ -252,7 +253,7 @@ namespace jm {
 
 		/// general use functions --------------------------------------------------------------------------------------
 
-		constexpr bool empty() const noexcept { return _end == nullptr; }
+		bool empty() const noexcept { return _end == nullptr; }
 
         /// \brief Searches for first occurrence of stored signature in the range [first, last - signature_length).
         /// \param first The first element of the range in which to search for.
