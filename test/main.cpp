@@ -9,15 +9,15 @@ constexpr static auto garbage_size = 0x10000;
 inline void fill_garbage(std::uint8_t range[garbage_size])
 {
     for (int i = 0; i < garbage_size; ++i)
-		range[i] = static_cast<std::uint8_t>(i);
+		range[i] = static_cast<std::uint8_t>(i % 256);
 }
 
-inline std::uint8_t* choose_random_pointer_in_range(std::uint8_t range[garbage_size])
+inline int get_random_garbage_idx(std::uint8_t range[garbage_size])
 {
     std::random_device                 r;
     std::mt19937                       rand(r());
-    std::uniform_int_distribution<int> uniform_dist(0x2ff, garbage_size - 0x100);
-    return range + uniform_dist(rand);
+    std::uniform_int_distribution<int> uniform_dist(1024, garbage_size - 1024);
+	return uniform_dist(rand);
 }
 
 TEST_CASE("memory_signature")
@@ -31,7 +31,7 @@ TEST_CASE("memory_signature")
     INFO("ends at "   << end   << '\n');
 
     SECTION("small signature 1 ? 3 5") {
-        const auto real = choose_random_pointer_in_range(garbage);
+        const auto real = garbage + get_random_garbage_idx(garbage);
         real[0] = 1;
         real[1] = 20;
         real[2] = 3;
@@ -52,7 +52,7 @@ TEST_CASE("memory_signature")
     }
 
     SECTION("medium sized signature 01 ?? 36 54 ?? 12 ?? 56 ?? ?? ?? 89") {
-        const auto real = choose_random_pointer_in_range(garbage);
+		const auto real = garbage + get_random_garbage_idx(garbage);
         real[0]  = 1;
         real[1]  = 54;
         real[2]  = 0x36;
@@ -82,7 +82,7 @@ TEST_CASE("memory_signature")
     }
 
     SECTION("constructors") {
-        const auto real = choose_random_pointer_in_range(garbage);
+		const auto real = garbage + get_random_garbage_idx(garbage);
         real[0] = 6;
         real[1] = 20;
         real[2] = 2;
@@ -113,7 +113,7 @@ TEST_CASE("memory_signature")
     }
 
     SECTION("assignment") {
-        const auto real = choose_random_pointer_in_range(garbage);
+		const auto real = garbage + get_random_garbage_idx(garbage);
         real[0] = 0x33;
         real[1] = 20;
         real[2] = 0x44;
