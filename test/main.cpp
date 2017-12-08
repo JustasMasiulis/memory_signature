@@ -14,20 +14,17 @@ inline int get_rand_idx()
 	return uniform_dist(rand);
 }
 
-const static auto fake_memory = []() {
-	std::unique_ptr<std::uint8_t[]> mem(new std::uint8_t[fake_memory_size]);
-	for (int i = 0; i < fake_memory_size; ++i)
-		mem[i] = static_cast<std::uint8_t>(i % 256);
-	return  mem;
-}();
+#define CREATE_TEST_MEMORY                                               \
+std::unique_ptr<std::uint8_t[]> mem(new std::uint8_t[fake_memory_size]); \
+for (int i = 0; i < fake_memory_size; ++i)                               \
+	mem[i] = static_cast<std::uint8_t>(i % 256);                         \
+auto* begin    = mem.get();	                                             \
+const auto end = begin + fake_memory_size;
+
 
 TEST_CASE("simple searches")
 {
-	auto* begin = fake_memory.get();
-	const auto end = begin + fake_memory_size;
-	INFO("begins at " << reinterpret_cast<std::uintptr_t>(begin) << '\n');
-	INFO("ends at " << reinterpret_cast<std::uintptr_t>(end) << '\n');
-
+	CREATE_TEST_MEMORY
 
 	SECTION("small signature 1 ? 3 5") {
 		const auto real = begin + get_rand_idx();
@@ -80,10 +77,7 @@ TEST_CASE("simple searches")
 }
 
 TEST_CASE("constructors") {
-	auto* begin    = fake_memory.get();
-	const auto end = begin + fake_memory_size;
-	INFO("begins at " << reinterpret_cast<std::uintptr_t>(begin) << '\n');
-	INFO("ends at "   << reinterpret_cast<std::uintptr_t>(end) << '\n');
+	CREATE_TEST_MEMORY
 
 	const auto real = begin + get_rand_idx();
 	real[0] = 6;
@@ -118,8 +112,7 @@ TEST_CASE("constructors") {
 }
 
 TEST_CASE("assignment") {
-	auto* begin    = fake_memory.get();
-	const auto end = begin + fake_memory_size;
+	CREATE_TEST_MEMORY
 	INFO("begins at " << reinterpret_cast<std::uintptr_t>(begin) << '\n');
 	INFO("ends at " << reinterpret_cast<std::uintptr_t>(end) << '\n');
 
