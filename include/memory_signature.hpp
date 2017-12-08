@@ -58,7 +58,7 @@ namespace jm {
             return find_wildcard(first, last, [](std::uint8_t b) { return !(b != ' ' && b != '?'); });
         }
 
-    }
+    } // namespace detail
 
     /// \brief A light wrapper class around a memory signature providing an easy way to search for it in memory
     class memory_signature {
@@ -250,6 +250,10 @@ namespace jm {
             hybrid_to_wildcard(pattern.begin(), pattern.end());
         }
 
+		/// general use functions --------------------------------------------------------------------------------------
+
+		constexpr bool empty() const noexcept { return _end == nullptr; }
+
         /// \brief Searches for first occurrence of stored signature in the range [first, last - signature_length).
         /// \param first The first element of the range in which to search for.
         /// \param last The one past the last element of the range in which to search for.
@@ -279,7 +283,7 @@ namespace jm {
             using std::begin;
             return find(begin(range), end(range));
         }
-    };
+    }; // class memory_signature
 
 } // namespace jm
 

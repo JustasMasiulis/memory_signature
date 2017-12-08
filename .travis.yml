@@ -68,6 +68,7 @@ install:
       which cmake || brew install cmake
     fi
 before_script:
+  - export MSAN_SYMBOLIZER_PATH=${MSAN_SYMBOLIZER_PATH:-$(which llvm-symbolizer)}
   - export CXX=${COMPILER}
   - cd ${TRAVIS_BUILD_DIR}
   - mkdir Build
