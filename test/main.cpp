@@ -6,13 +6,13 @@
 
 constexpr static auto garbage_size = 0x10000;
 
-inline void fill_garbage(std::uint8_t range[garbage_size])
+inline void fill_garbage(std::uint8_t* range)
 {
     for (int i = 0; i < garbage_size; ++i)
 		range[i] = static_cast<std::uint8_t>(i % 256);
 }
 
-inline int get_random_garbage_idx(std::uint8_t range[garbage_size])
+inline int get_random_garbage_idx()
 {
     std::random_device                 r;
     std::mt19937                       rand(r());
@@ -22,16 +22,17 @@ inline int get_random_garbage_idx(std::uint8_t range[garbage_size])
 
 TEST_CASE("memory_signature")
 {
-	std::uint8_t garbage[garbage_size] = { 0 };
-    fill_garbage(garbage);
+	std::unique_ptr<std::uint8_t> garbage(new std::uint8_t[garbage_size]);
+	std::memset(garbage.get(), 0, garbage_size);
+    fill_garbage(garbage.get());
 
-    const auto *begin = garbage;
-    const auto end    = begin + garbage_size;
+    auto* begin    = garbage.get();
+    const auto end = begin + garbage_size;
     INFO("begins at " << begin << '\n');
     INFO("ends at "   << end   << '\n');
 
     SECTION("small signature 1 ? 3 5") {
-        const auto real = garbage + get_random_garbage_idx(garbage);
+        const auto real = begin + get_random_garbage_idx();
         real[0] = 1;
         real[1] = 20;
         real[2] = 3;
@@ -52,7 +53,7 @@ TEST_CASE("memory_signature")
     }
 
     SECTION("medium sized signature 01 ?? 36 54 ?? 12 ?? 56 ?? ?? ?? 89") {
-		const auto real = garbage + get_random_garbage_idx(garbage);
+		const auto real = begin + get_random_garbage_idx();
         real[0]  = 1;
         real[1]  = 54;
         real[2]  = 0x36;
@@ -82,7 +83,7 @@ TEST_CASE("memory_signature")
     }
 
     SECTION("constructors") {
-		const auto real = garbage + get_random_garbage_idx(garbage);
+		const auto real = begin + get_random_garbage_idx();
         real[0] = 6;
         real[1] = 20;
         real[2] = 2;
@@ -113,7 +114,7 @@ TEST_CASE("memory_signature")
     }
 
     SECTION("assignment") {
-		const auto real = garbage + get_random_garbage_idx(garbage);
+		const auto real = begin + get_random_garbage_idx();
         real[0] = 0x33;
         real[1] = 20;
         real[2] = 0x44;
