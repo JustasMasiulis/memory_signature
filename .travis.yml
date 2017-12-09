@@ -3,8 +3,10 @@ sudo: required
 dist: trusty
 
 matrix:
-  include:
+  allow_failures:
+    - env: COMPILER='clang++-4.0' BUILD_TYPE='Debug' SANITIZE_ADDRESS='OFF' SANITIZE_MEMORY='ON'
 
+  include:
     # Linux C++14 GCC builds
     - os: linux
       compiler: gcc

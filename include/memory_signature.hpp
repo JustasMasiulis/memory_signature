@@ -121,8 +121,8 @@ namespace jm {
     public:
         /// \brief Construct a new signature that is empty
         /// \throw Nothrow guarantee
-        explicit constexpr memory_signature() noexcept
-                : _pattern()
+        explicit memory_signature() noexcept
+                : _pattern(nullptr)
                 , _end(nullptr)
                 , _wildcard(0) {}
 
@@ -142,29 +142,31 @@ namespace jm {
         ///       nothrow guarantee is given.
         memory_signature &operator=(const memory_signature &other)
         {
-            // check if we need to re-allocate the storage
-            const auto new_size = other.diff();
-			if (this->diff() < new_size)
-				_pattern.reset(new std::uint8_t[new_size]);
-			// self assignment protection. copy_backward may be a better choice?
-			else if (_end == other._end)
-				return *this;
+			// self assignment protection
+			if (this != std::addressof(other)) {
+				// check if we need to re-allocate the storage
+				const auto new_size = other.diff();
+				if (diff() < new_size)
+					_pattern.reset(new std::uint8_t[new_size]);
 
-			_end      = std::copy(other._pattern.get(), other._end, _pattern.get());
-			_wildcard = other._wildcard;
+				_end      = std::copy(other._pattern.get(), other._end, _pattern.get());
+				_wildcard = other._wildcard;
+			}
+
             return *this;
         }
 
         /// \brief Move constructor
         /// \throw Nothrow guarantee
-        memory_signature(memory_signature &&other) noexcept
-                : _pattern(std::move(other._pattern))
+        memory_signature(memory_signature&& other) noexcept
+		// no need to move assign - default deleter will be used
+                : _pattern(other._pattern.release())
                 , _end(other._end)
                 , _wildcard(other._wildcard) {}
 
         /// \brief Move assignment operator
         /// \throw Nothrow guarantee
-        memory_signature &operator=(memory_signature &&other) noexcept
+        memory_signature &operator=(memory_signature&& other) noexcept
         {
 			_pattern.reset(other._pattern.release());
             _end      = other._end;
@@ -253,7 +255,7 @@ namespace jm {
 
 		/// general use functions --------------------------------------------------------------------------------------
 
-		bool empty() const noexcept { return _end == nullptr; }
+		bool empty() const noexcept { return _pattern.get() == _end; }
 
         /// \brief Searches for first occurrence of stored signature in the range [first, last - signature_length).
         /// \param first The first element of the range in which to search for.
@@ -263,7 +265,7 @@ namespace jm {
         template<class ForwardIt>
         ForwardIt find(ForwardIt first, ForwardIt last) const
         {
-            if (_pattern.get() == _end)
+            if (empty())
                 return last;
 
             // we need this to avoid capture of this in c++11
@@ -284,6 +286,7 @@ namespace jm {
             using std::begin;
             return find(begin(range), end(range));
         }
+
     }; // class memory_signature
 
 } // namespace jm
