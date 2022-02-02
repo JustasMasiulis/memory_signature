@@ -17,6 +17,7 @@
 #ifndef JM_MEMORY_SIGNATURE_HPP
 #define JM_MEMORY_SIGNATURE_HPP
 
+#include <stdexcept> // range_error, invalid_argument
 #include <algorithm> // search
 #include <iterator>  // begin, end
 #include <cstdint>   // uint8_t
